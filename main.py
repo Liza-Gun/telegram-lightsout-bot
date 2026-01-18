@@ -1,23 +1,15 @@
 import os
 import random
 from fastapi import FastAPI, Request
-from telegram import (
-    Update,
-    InlineKeyboardButton,
-    InlineKeyboardMarkup,
-)
-from telegram.ext import (
-    Application,
-    CommandHandler,
-    CallbackQueryHandler,
-    ContextTypes,
-)
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # =====================
 # Переменные окружения
 # =====================
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")  # https://your-app.onrender.com
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
+PORT = int(os.getenv("PORT", 10000))
 
 if not TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN is not set")
@@ -112,7 +104,15 @@ async def on_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=keyboard(field)
         )
 
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(
+        "Используйте /start для начала новой игры.\n"
+        "Цель: сделать все клетки одного цвета."
+    )
+
+# Регистрация хендлеров
 telegram_app.add_handler(CommandHandler("start", start))
+telegram_app.add_handler(CommandHandler("help", help_command))
 telegram_app.add_handler(CallbackQueryHandler(on_click))
 
 # =====================
@@ -124,7 +124,7 @@ async def on_startup():
     await telegram_app.bot.set_webhook(
         url=f"{WEBHOOK_URL}/webhook"
     )
-    print("Webhook установлен")
+    print(f"Webhook установлен: {WEBHOOK_URL}/webhook")
 
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
@@ -132,3 +132,16 @@ async def telegram_webhook(request: Request):
     update = Update.de_json(data, telegram_app.bot)
     await telegram_app.process_update(update)
     return {"ok": True}
+
+@app.get("/")
+async def root():
+    return {"status": "Bot is running", "service": "Telegram Lights Out Bot"}
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+# Для локального запуска (не используется на Render)
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=PORT)
