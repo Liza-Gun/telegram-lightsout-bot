@@ -1,6 +1,10 @@
+# ============================================
+# PYTHON - СТАНДАРТНЫЕ НАСТРОЙКИ (уже есть)
+# ============================================
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[codz]
+*.py[cod]
 *$py.class
 
 # C extensions
@@ -27,8 +31,6 @@ share/python-wheels/
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -83,48 +85,22 @@ profile_default/
 ipython_config.py
 
 # pyenv
-#   For a library or package, you might want to ignore these files since the code is
-#   intended to run in multiple environments; otherwise, check them in:
-# .python-version
+.python-version
 
 # pipenv
-#   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
 #Pipfile.lock
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
-
 # poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
 #poetry.lock
-#poetry.toml
 
 # pdm
-#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
-#   pdm recommends including project-wide configuration in pdm.toml, but excluding .pdm-python.
-#   https://pdm-project.org/en/latest/usage/project/#working-with-version-control
-#pdm.lock
-#pdm.toml
 .pdm-python
 .pdm-build/
 
 # pixi
-#   Similar to Pipfile.lock, it is generally recommended to include pixi.lock in version control.
-#pixi.lock
-#   Pixi creates a virtual environment in the .pixi directory, just like venv module creates one
-#   in the .venv directory. It is recommended not to include this directory in version control.
 .pixi
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow and github.com/pdm-project/pdm
+# PEP 582 packages
 __pypackages__/
 
 # Celery stuff
@@ -135,9 +111,9 @@ celerybeat.pid
 *.sage.py
 
 # Environments
-.env
+.env           # ⚠️ ВАЖНО: скрывает файлы .env
 .envrc
-.venv
+.venv          # ⚠️ ВАЖНО: скрывает виртуальные окружения
 env/
 venv/
 ENV/
@@ -168,40 +144,109 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# PyCharm
-#  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
-#  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
-#  and can be added to the global gitignore or merged into this file.  For a more nuclear
-#  option (not recommended) you can uncomment the following to ignore the entire idea folder.
-#.idea/
+# ============================================
+# ДОБАВЛЯЕМ ДЛЯ ТЕЛЕГРАМ-БОТА (НОВОЕ)
+# ============================================
 
-# Abstra
-# Abstra is an AI-powered process automation framework.
-# Ignore directories containing user credentials, local state, and settings.
-# Learn more at https://abstra.io/docs
-.abstra/
+# Конфигурационные файлы с секретами
+config.py
+config.local.py
+secrets.json
+credentials.json
+*.key
+*.pem
 
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
+# Файлы с токенами (любые расширения)
+token.txt
+bot_token.txt
+api_keys.txt
 
-# Ruff stuff:
-.ruff_cache/
+# Файлы для разработки (не для продакшена)
+debug.log
+error.log
+bot.log
+*.log          # ⚠️ все логи
 
-# PyPI configuration file
-.pypirc
+# Базы данных SQLite (если появятся)
+*.db
+*.sqlite
+*.sqlite3
 
-# Cursor
-#  Cursor is an AI-powered code editor. `.cursorignore` specifies files/directories to
-#  exclude from AI features like autocomplete and code analysis. Recommended for sensitive data
-#  refer to https://docs.cursor.com/context/ignore-files
-.cursorignore
-.cursorindexingignore
+# Файлы операционной системы
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# Marimo
-marimo/_static/
-marimo/_lsp/
-__marimo__/
+# Идея для файла с примером настроек
+# (сам файл .env.example коммитить МОЖНО)
+# .env          # скрыть реальный
+# .env.example  # оставить пример
+
+# Временные файлы редакторов
+*.swp
+*.swo
+*~
+*.bak
+
+# ============================================
+# IDE И РЕДАКТОРЫ КОДА
+# ============================================
+
+# PyCharm / IntelliJ IDEA
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+# Vim
+[._]*.s[a-w][a-z]
+[._]s[a-w][a-z]
+*.un~
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# Linux
+*~
+
+# ============================================
+# RENDER / ХОСТИНГ СПЕЦИФИЧНЫЕ ФАЙЛЫ
+# ============================================
+
+# Render не нужны эти файлы
+render.yaml
+render.yml
+
+# Локальные настройки деплоя
+deploy.local.sh
