@@ -13,39 +13,39 @@ from telegram.ext import (
 from dotenv import load_dotenv
 
 # =====================
-# Загрузка окружения !!!!
+# Загрузка переменных окружения
 # =====================
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://localhost:8000")
+WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 PORT = int(os.getenv("PORT", 8000))
 
 if not TOKEN:
-    raise ValueError("TELEGRAM_BOT_TOKEN is not set")
+    raise RuntimeError("❌ TELEGRAM_BOT_TOKEN is not set")
 
 print(f"Token: {TOKEN[:10]}...")
 print(f"Webhook URL: {WEBHOOK_URL}")
 print(f"Port: {PORT}")
 
 # =====================
-# Telegram app
+# Telegram application
 # =====================
 telegram_app = Application.builder().token(TOKEN).build()
 
 BLUE = "🔵"
 RED = "🔴"
-games = {}
+games: dict[int, list[int]] = {}
 
 # =====================
-# Логика игры
+# Логика игры Lights Out
 # =====================
-def new_game():
+def new_game() -> list[int]:
     return [random.randint(0, 1) for _ in range(9)]
 
 
-def toggle(field, index):
-    def flip(i):
+def toggle(field: list[int], index: int) -> None:
+    def flip(i: int):
         field[i] ^= 1
 
     flip(index)
@@ -61,15 +61,15 @@ def toggle(field, index):
         flip(index + 1)
 
 
-def is_solved(field):
+def is_solved(field: list[int]) -> bool:
     return all(cell == field[0] for cell in field)
 
 
-def keyboard(field):
+def keyboard(field: list[int]) -> InlineKeyboardMarkup:
     buttons = [
         InlineKeyboardButton(
             RED if cell else BLUE,
-            callback_data=str(i)
+            callback_data=str(i),
         )
         for i, cell in enumerate(field)
     ]
@@ -81,7 +81,7 @@ def keyboard(field):
     ])
 
 # =====================
-# Хендлеры
+# Telegram handlers
 # =====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -111,7 +111,7 @@ async def on_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if is_solved(field):
         await query.edit_message_text("🎉 Победа!\nПоле одного цвета!")
-        del games[user_id]
+        games.pop(user_id, None)
     else:
         await query.edit_message_reply_markup(
             reply_markup=keyboard(field)
@@ -120,16 +120,19 @@ async def on_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Используйте /start для начала новой игры.\n"
+        "Команды:\n"
+        "/start — начать новую игру\n"
+        "/help — справка\n\n"
         "Цель: сделать все клетки одного цвета."
     )
+
 
 telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(CommandHandler("help", help_command))
 telegram_app.add_handler(CallbackQueryHandler(on_click))
 
 # =====================
-# Lifespan
+# FastAPI lifespan
 # =====================
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -137,18 +140,17 @@ async def lifespan(app: FastAPI):
     await telegram_app.initialize()
     await telegram_app.start()
 
-    if WEBHOOK_URL and "localhost" not in WEBHOOK_URL:
+    if WEBHOOK_URL:
         await telegram_app.bot.set_webhook(
             url=f"{WEBHOOK_URL}/webhook"
         )
         print(f"✅ Webhook установлен: {WEBHOOK_URL}/webhook")
     else:
-        print("⚠️  Webhook не установлен (локальный режим)")
+        print("⚠️ WEBHOOK_URL не задан — webhook не установлен")
 
     yield
 
     # SHUTDOWN
-    await telegram_app.bot.delete_webhook()
     await telegram_app.stop()
     await telegram_app.shutdown()
     print("🛑 Bot stopped")
@@ -168,11 +170,12 @@ async def telegram_webhook(request: Request):
     await telegram_app.process_update(update)
     return {"ok": True}
 
-
+# =====================
+# Service endpoints
+# =====================
 @app.get("/")
 async def root():
-    return {"status": "Bot is running"}
-
+    return {"status": "ok", "service": "Telegram Lights Out Bot"}
 
 @app.get("/health")
 async def health():
