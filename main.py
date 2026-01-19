@@ -13,7 +13,7 @@ from telegram.ext import (
 from dotenv import load_dotenv
 
 # =====================
-# Загрузка окружения
+# Загрузка окружения !!!!
 # =====================
 load_dotenv()
 
