@@ -1,26 +1,36 @@
 import os
 import random
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI, Request
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
+from telegram.ext import (
+    Application,
+    CommandHandler,
+    CallbackQueryHandler,
+    ContextTypes,
+)
+from dotenv import load_dotenv
 
 # =====================
-# Переменные окружения
+# Загрузка окружения
 # =====================
+load_dotenv()
+
 TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-PORT = int(os.getenv("PORT", 10000))
+WEBHOOK_URL = os.getenv("WEBHOOK_URL", "http://localhost:8000")
+PORT = int(os.getenv("PORT", 8000))
 
 if not TOKEN:
     raise ValueError("TELEGRAM_BOT_TOKEN is not set")
 
-if not WEBHOOK_URL:
-    raise ValueError("WEBHOOK_URL is not set")
+print(f"Token: {TOKEN[:10]}...")
+print(f"Webhook URL: {WEBHOOK_URL}")
+print(f"Port: {PORT}")
 
 # =====================
-# Инициализация
+# Telegram app
 # =====================
-app = FastAPI()
 telegram_app = Application.builder().token(TOKEN).build()
 
 BLUE = "🔵"
@@ -32,6 +42,7 @@ games = {}
 # =====================
 def new_game():
     return [random.randint(0, 1) for _ in range(9)]
+
 
 def toggle(field, index):
     def flip(i):
@@ -49,18 +60,19 @@ def toggle(field, index):
     if col < 2:
         flip(index + 1)
 
+
 def is_solved(field):
     return all(cell == field[0] for cell in field)
 
+
 def keyboard(field):
-    buttons = []
-    for i, cell in enumerate(field):
-        buttons.append(
-            InlineKeyboardButton(
-                RED if cell else BLUE,
-                callback_data=str(i)
-            )
+    buttons = [
+        InlineKeyboardButton(
+            RED if cell else BLUE,
+            callback_data=str(i)
         )
+        for i, cell in enumerate(field)
+    ]
 
     return InlineKeyboardMarkup([
         buttons[0:3],
@@ -69,7 +81,7 @@ def keyboard(field):
     ])
 
 # =====================
-# Хендлеры Telegram
+# Хендлеры
 # =====================
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
@@ -81,6 +93,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Сделай поле одного цвета!",
         reply_markup=keyboard(games[user_id]),
     )
+
 
 async def on_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -104,28 +117,50 @@ async def on_click(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=keyboard(field)
         )
 
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Используйте /start для начала новой игры.\n"
         "Цель: сделать все клетки одного цвета."
     )
 
-# Регистрация хендлеров
 telegram_app.add_handler(CommandHandler("start", start))
 telegram_app.add_handler(CommandHandler("help", help_command))
 telegram_app.add_handler(CallbackQueryHandler(on_click))
 
 # =====================
-# Webhook endpoints
+# Lifespan
 # =====================
-@app.on_event("startup")
-async def on_startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # STARTUP
     await telegram_app.initialize()
-    await telegram_app.bot.set_webhook(
-        url=f"{WEBHOOK_URL}/webhook"
-    )
-    print(f"Webhook установлен: {WEBHOOK_URL}/webhook")
+    await telegram_app.start()
 
+    if WEBHOOK_URL and "localhost" not in WEBHOOK_URL:
+        await telegram_app.bot.set_webhook(
+            url=f"{WEBHOOK_URL}/webhook"
+        )
+        print(f"✅ Webhook установлен: {WEBHOOK_URL}/webhook")
+    else:
+        print("⚠️  Webhook не установлен (локальный режим)")
+
+    yield
+
+    # SHUTDOWN
+    await telegram_app.bot.delete_webhook()
+    await telegram_app.stop()
+    await telegram_app.shutdown()
+    print("🛑 Bot stopped")
+
+# =====================
+# FastAPI app
+# =====================
+app = FastAPI(lifespan=lifespan)
+
+# =====================
+# Webhook endpoint
+# =====================
 @app.post("/webhook")
 async def telegram_webhook(request: Request):
     data = await request.json()
@@ -133,15 +168,12 @@ async def telegram_webhook(request: Request):
     await telegram_app.process_update(update)
     return {"ok": True}
 
+
 @app.get("/")
 async def root():
-    return {"status": "Bot is running", "service": "Telegram Lights Out Bot"}
+    return {"status": "Bot is running"}
+
 
 @app.get("/health")
-async def health_check():
+async def health():
     return {"status": "healthy"}
-
-# Для локального запуска (не используется на Render)
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=PORT)
